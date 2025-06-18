@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
   document.querySelector('#compose').addEventListener('click', compose_email);
 
+  //codigo feio
   //quando form der submit, executara essa funcao
   document.querySelector('#compose-form').addEventListener('submit', () => {
     event.preventDefault();
@@ -47,16 +48,11 @@ function load_mailbox(mailbox) {
   // Show the mailbox name
   document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
 
-  // Show Content Send
-  if(mailbox === 'sent'){
-    get_emails_send();
-  }
-  if(mailbox === 'inbox'){
-    get_emails_inbox();
-  }
+  // Show Content Inbox/Send/Archive
+  get_emails(mailbox);
 }
 
-
+//todo: codigo feio
 function testeForm(event) {
   event.preventDefault();  // Impede recarregamento da página
 
@@ -82,43 +78,92 @@ function create_email(recipients, subject, body) {
       })
 }
 
-function get_emails_send(){
-  const ul = document.createElement('ul')
-  ul.setAttribute('id', 'emails-view-send')
+//todo: nao esta funcionando ao clicar no email - email_view
+//todo: talvez especificar melhor a message de array vazio
+function get_emails(mailbox){
+  const heading = document.createElement('h3');
+  heading.innetHTML = `Emails ${mailbox}`;
 
-  let emails_send = fetch('/emails/sent')
-      .then(response => response.json())
-      .then(emails_send => {
-        document.querySelector('#emails-view').innerHTML = ``
+  const ul = document.createElement('ul');
+  ul.setAttribute('id', 'emails-view-ul');
 
-        emails_send.forEach(email => {
-          const li = document.createElement('li')
-          li.innerHTML = `
-          <strong>To: ${email.recipients}</strong> ${email.subject}  ${email.timestamp} 
-          `;
-          ul.appendChild(li)
+  const emails_div = document.querySelector('#emails-view');
+
+  fetch(`emails/${mailbox}`).then(response => response.json())
+    .then(emails => {
+      
+      emails_div.innerHTML = '';
+      if(emails.length > 0){
+        emails_div.appendChild(heading)
+
+        emails.forEach(email => {
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>${email.sender}</strong>  ${email.subject}  ${email.timestamp}`;
+          li.style.cursor = 'pointer';
+
+          li.addEventListener('click', view_email(email.id))
+
+          ul.appendChild(li);
         })
-        document.querySelector('#emails-view').appendChild(ul)
-      })
+        emails_div.appendChild(ul);
+
+      }else{
+        const message = document.createElement('p');
+        message.textContent = 'There is no emails';
+        emails_div.appendChild(message);
+      }
+    })
 }
 
-function get_emails_inbox(){
-  const ul = document.createElement('ul')
-  ul.setAttribute('id', 'emails-view-inbox')
 
-  let emails_inbox = fetch('emails/inbox').then(response => response.json())
-  .then(emails_inbox => {
-    document.querySelector('#emails-view').innerHTML = ``
+//tag hr == linha horizontal
+function view_email(id){
+  const email_div = document.querySelector('#emails-view');
 
-    emails_inbox.forEach(email => {
-      const li = document.createElement('li');
-      li.innerHTML = `
-      <strong>${email.sender}</strong>   ${email.subject}    ${email.timestamp}
-      `;
-      ul.appendChild(li);
+  const heading = document.createElement('h3');
+  heading.textContent = "Email Details"
+
+  const ul = document.createElement('ul');
+  ul.setAttribute('id', 'emails-view-email');
+
+  fetch(`/emails/${id}`).then(response => response.id())
+    .then(email => {
+      email_div.innerHTML = '';
+
+      const heading_subject = document.createElement('h3');
+      heading_subject.innerHTML = email.subject;
+
+      const sender = document.createElement('p');
+      sender.textContent = email.sender;
+
+      const recipients_list = document.createElement('ul');
+      email.recipients.forEach(recipient => {
+        li = document.createElement('p')
+        li.innetHTML = recipient
+
+        recipients_list.appendChild(li)
+      });
+
+
+      const body = document.createElement('p');
+      body.textContent = email.body;
+
+      const timestamp = document.createElement('p');
+      timestamp.textContent = email.timestamp;
+
+      const read = document.createElement('p');
+      read.textContent = email.read;
+
+      const archive = document.createElement('p');
+      archive.textContent = email.archive;
+
+      email_div.appendChild(heading_subject);
+      email_div.appendChild(sender);
+      email_div.appendChild(recipients_list);
+      email_div.appendChild(body);
+      email_div.appendChild(timestamp);
+      email_div.appendChild(read);
+      email_div.appendChild(archive);
+
     })
-
-    document.querySelector('#emails-view').appendChild(ul);
-    console.log(emails_inbox)
-  })
 }
