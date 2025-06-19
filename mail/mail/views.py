@@ -118,6 +118,10 @@ def email(request, email_id):
         if data.get("archived") is not None:
             email.archived = data["archived"]
         email.save()
+
+        #todo: retirar esse print
+        print(f"Status archived: {email.archived}")
+        
         return HttpResponse(status=204)
 
     # Email must be via GET or PUT

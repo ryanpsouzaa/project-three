@@ -10,17 +10,17 @@ document.addEventListener('DOMContentLoaded', function() {
   //quando form der submit, executara essa funcao
   document.querySelector('#compose-form').addEventListener('submit', () => {
     event.preventDefault();
+
     const recipient = document.querySelector('#compose-recipients').value;
     const subject = document.querySelector('#compose-subject').value;
     const body = document.querySelector('#compose-body').value;
+
     console.log(recipient);
     console.log(subject);
     console.log(body);
 
     create_email(recipient, subject, body);
-    load_mailbox('sent');
   })
-
 
   // By default, load the inbox
   load_mailbox('inbox');
@@ -76,6 +76,8 @@ function create_email(recipients, subject, body) {
       .then(result => {
         console.log(result)
       })
+      //redireciona para emails enviados
+      load_mailbox('sent');
 }
 
 //todo: nao esta funcionando ao clicar no email - email_view
@@ -88,7 +90,7 @@ function get_emails(mailbox){
   ul.setAttribute('id', 'emails-view-ul');
 
   const emails_div = document.querySelector('#emails-view');
-
+  
   fetch(`emails/${mailbox}`).then(response => response.json())
     .then(emails => {
       
@@ -98,10 +100,19 @@ function get_emails(mailbox){
 
         emails.forEach(email => {
           const li = document.createElement('li');
+
+          if(email.read){
+            //todo: lido -> fundo cinza
+            //todo: nao_lido -> fundo branco
+            li.setAttribute('class', 'emails-view-item-read')
+          }else{
+            li.setAttribute('class', 'emails-view-item')
+          }
+          
           li.innerHTML = `<strong>${email.sender}</strong>  ${email.subject}  ${email.timestamp}`;
           li.style.cursor = 'pointer';
 
-          li.addEventListener('click', view_email(email.id))
+          li.addEventListener('click', () => view_email(email.id, mailbox));
 
           ul.appendChild(li);
         })
@@ -115,9 +126,9 @@ function get_emails(mailbox){
     })
 }
 
-
+//todo: testar multiplos remetentes
 //tag hr == linha horizontal
-function view_email(id){
+function view_email(id, mailbox){
   const email_div = document.querySelector('#emails-view');
 
   const heading = document.createElement('h3');
@@ -126,44 +137,81 @@ function view_email(id){
   const ul = document.createElement('ul');
   ul.setAttribute('id', 'emails-view-email');
 
-  fetch(`/emails/${id}`).then(response => response.id())
+  fetch(`/emails/${id}`).then(response => response.json())
     .then(email => {
       email_div.innerHTML = '';
 
       const heading_subject = document.createElement('h3');
       heading_subject.innerHTML = email.subject;
 
-      const sender = document.createElement('p');
-      sender.textContent = email.sender;
+      const sender_li = document.createElement('li');
+      sender_li.innerHTML = email.sender;
 
       const recipients_list = document.createElement('ul');
       email.recipients.forEach(recipient => {
-        li = document.createElement('p')
-        li.innetHTML = recipient
+        const li = document.createElement('li')
+        li.innerHTML = recipient
 
         recipients_list.appendChild(li)
       });
 
+      const body_li = document.createElement('li');
+      body_li.innerHTML = email.body;
 
-      const body = document.createElement('p');
-      body.textContent = email.body;
+      const timestamp_li = document.createElement('li');
+      timestamp_li.innerHTML = email.timestamp;
 
-      const timestamp = document.createElement('p');
-      timestamp.textContent = email.timestamp;
-
-      const read = document.createElement('p');
-      read.textContent = email.read;
-
-      const archive = document.createElement('p');
-      archive.textContent = email.archive;
+      const archive_li = document.createElement('li');
+      archive_li.innerHTML = email.archived;
 
       email_div.appendChild(heading_subject);
-      email_div.appendChild(sender);
-      email_div.appendChild(recipients_list);
-      email_div.appendChild(body);
-      email_div.appendChild(timestamp);
-      email_div.appendChild(read);
-      email_div.appendChild(archive);
 
+      
+      if(mailbox === 'archive' || mailbox === 'inbox'){
+        email_archived(email);
+      }
+
+      email_div.appendChild(sender_li);
+      email_div.appendChild(recipients_list);
+      email_div.appendChild(body_li);
+      email_div.appendChild(timestamp_li);
+      email_div.appendChild(archive_li);
+
+      email_read(id);
     })
+}
+
+function email_read(id){
+  fetch(`/emails/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      read : true
+    })
+  });
+}
+
+function email_archived(email){
+  const button_archive = document.createElement('button');
+  button_archive.setAttribute('class', 'btn btn-sm btn-outline-primary');
+  button_archive.setAttribute('id', 'emails-view-button-archive')
+  button_archive.innerText = email.archived ? 'Unarchive' : 'Archive';
+
+  document.querySelector('#emails-view').appendChild(button_archive);
+
+  const fetch_archived_status = !email.archived;
+
+  button_archive.addEventListener('click', () => {
+    fetch(`/emails/${email.id}`, {
+      method : 'PUT',
+      body : JSON.stringify({
+        archived : fetch_archived_status
+      })
+    }).then(response => {
+      console.log(response)
+      email.archived = fetch_archived_status
+      button_archive.innerText = email.archived ? 'Unarchive' : 'Archive'
+
+      load_mailbox('inbox')
+    })
+  })//end listener
 }
