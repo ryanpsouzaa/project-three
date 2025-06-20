@@ -152,6 +152,9 @@ function view_email(id, mailbox){
       const sender_li = document.createElement('li');
       sender_li.innerHTML = `Sender: ${email.sender}`;
 
+      const recipients_heading = document.createElement('h4');
+      recipients_heading.innerHTML = 'Recipients';
+
       const recipients_list = document.createElement('ul');
       email.recipients.forEach(recipient => {
         const li = document.createElement('li')
@@ -183,7 +186,10 @@ function view_email(id, mailbox){
 
       //add others info about email
       email_div.appendChild(sender_li);
+
+      email_div.appendChild(recipients_heading);
       email_div.appendChild(recipients_list);
+
       email_div.appendChild(body_li);
       email_div.appendChild(timestamp_li);
       email_div.appendChild(archive_li);
@@ -255,6 +261,11 @@ function reply_email(email){
 
   //body
   //On Jan 1 2020, 12:00 AM foo@example.com wrote:
-  const pre_body = `\nOn ${email.timestamp} ${email.sender} wrote:\n${email.body}`
-  body_compose.value = pre_body
+  const pre_body = `----------------------------
+  On ${email.timestamp} ${email.sender} wrote:
+  ${email.body}
+  ----------------------------
+
+  `;
+  body_compose.value = pre_body;
 }
