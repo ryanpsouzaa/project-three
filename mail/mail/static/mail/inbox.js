@@ -137,6 +137,11 @@ function view_email(id, mailbox){
   const ul = document.createElement('ul');
   ul.setAttribute('id', 'emails-view-email');
 
+  const button_reply = document.createElement('button');
+  button_reply.setAttribute('class', 'btn btn-sm btn-outline-primary');
+  button_reply.setAttribute('id', 'emails-view-button-reply');
+  button_reply.innerText = 'Reply';
+
   fetch(`/emails/${id}`).then(response => response.json())
     .then(email => {
       email_div.innerHTML = '';
@@ -145,7 +150,7 @@ function view_email(id, mailbox){
       heading_subject.innerHTML = email.subject;
 
       const sender_li = document.createElement('li');
-      sender_li.innerHTML = email.sender;
+      sender_li.innerHTML = `Sender: ${email.sender}`;
 
       const recipients_list = document.createElement('ul');
       email.recipients.forEach(recipient => {
@@ -156,21 +161,27 @@ function view_email(id, mailbox){
       });
 
       const body_li = document.createElement('li');
-      body_li.innerHTML = email.body;
+      body_li.innerHTML = `Body: ${email.body}`;
 
       const timestamp_li = document.createElement('li');
-      timestamp_li.innerHTML = email.timestamp;
+      timestamp_li.innerHTML = `Timestamp: ${email.timestamp}`;
 
       const archive_li = document.createElement('li');
-      archive_li.innerHTML = email.archived;
+      archive_li.innerHTML = `Archived: ${email.archived}`;
 
+      //add subject to div
       email_div.appendChild(heading_subject);
 
-      
+      //add button reply to div
+      email_div.appendChild(button_reply);
+      button_reply.addEventListener('click', ()=> reply_email(email))
+
+      //add button archive to div
       if(mailbox === 'archive' || mailbox === 'inbox'){
         email_archived(email);
       }
 
+      //add others info about email
       email_div.appendChild(sender_li);
       email_div.appendChild(recipients_list);
       email_div.appendChild(body_li);
@@ -214,4 +225,36 @@ function email_archived(email){
       load_mailbox('inbox')
     })
   })//end listener
+}
+
+//todo: Reply do Reply com muito texto no body
+function reply_email(email){
+  const recipients_compose = document.querySelector('#compose-recipients');
+  const subject_compose = document.querySelector('#compose-subject');
+  const body_compose = document.querySelector('#compose-body');
+
+  recipients_compose.value = '';
+  subject_compose.value = '';
+  body_compose.value = '';
+
+  // Show compose view and hide other views
+  document.querySelector('#emails-view').style.display = 'none';
+  document.querySelector('#compose-view').style.display = 'block';
+
+  //recipients
+  recipients_compose.value = email.sender;
+  recipients_compose.disabled = true;
+
+  //subject
+  let pre_subject = email.subject;
+  if(!pre_subject.startsWith('Re:')){
+    pre_subject = `Re: ${pre_subject}`;
+  }
+  subject_compose.value = pre_subject;
+  subject_compose.disabled = true;
+
+  //body
+  //On Jan 1 2020, 12:00 AM foo@example.com wrote:
+  const pre_body = `\nOn ${email.timestamp} ${email.sender} wrote:\n${email.body}`
+  body_compose.value = pre_body
 }
